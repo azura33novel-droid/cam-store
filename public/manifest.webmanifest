@@ -1,0 +1,10 @@
+{
+  "name": "CAM Store",
+  "short_name": "CAM Store",
+  "description": "Marketplace gamer CAM Store",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#080d18",
+  "theme_color": "#0b1322",
+  "lang": "pt-BR"
+}
