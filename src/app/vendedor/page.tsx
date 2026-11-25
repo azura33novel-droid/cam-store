@@ -27,6 +27,8 @@ export default function PainelVendedor() {
   const [preco, setPreco] = useState("");
   const [diamantes, setDiamantes] = useState("");
   const [estoque, setEstoque] = useState("1");
+  const [editando, setEditando] = useState<string | null>(null);
+  const [novoTitulo, setNovoTitulo] = useState("");
   const [mensagem, setMensagem] = useState("");
   const [carregando, setCarregando] = useState(false);
 
@@ -149,6 +151,28 @@ export default function PainelVendedor() {
 
     await carregarPainel();
   }
+
+  async function salvarEdicao(id: string) {
+  if (!novoTitulo.trim()) {
+    setMensagem("Digite o novo nome do produto.");
+    return;
+  }
+
+  const { error } = await supabase
+    .from("products")
+    .update({ title: novoTitulo })
+    .eq("id", id);
+
+  if (error) {
+    setMensagem("Erro ao editar: " + error.message);
+    return;
+  }
+
+  setMensagem("Produto atualizado com sucesso!");
+  setEditando(null);
+  setNovoTitulo("");
+  await carregarPainel();
+        }
 
   async function sair() {
     await supabase.auth.signOut();
@@ -330,7 +354,47 @@ export default function PainelVendedor() {
                 padding: "16px",
                 marginTop: "12px"
               }}>
-                <h3>{produto.title}</h3>
+                {editando === produto.id ? (
+  <div>
+    <input
+      value={novoTitulo}
+      onChange={(e) => setNovoTitulo(e.target.value)}
+      style={campo}
+      placeholder="Novo nome do produto"
+    />
+
+    <button
+      onClick={() => salvarEdicao(produto.id)}
+      style={botao}
+    >
+      Salvar
+    </button>
+
+    <button
+      onClick={() => {
+        setEditando(null);
+        setNovoTitulo("");
+      }}
+      style={botao}
+    >
+      Cancelar
+    </button>
+  </div>
+) : (
+  <>
+    <h3>{produto.title}</h3>
+
+    <button
+      onClick={() => {
+        setEditando(produto.id);
+        setNovoTitulo(produto.title);
+      }}
+      style={botao}
+    >
+      Editar nome
+    </button>
+  </>
+)}
                 <p>Categoria: {produto.category}</p>
                 <p>
                   Preço: {produto.price_brl !== null
