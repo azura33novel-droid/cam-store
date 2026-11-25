@@ -713,5 +713,72 @@ export default function PainelVendedor() {
                   <>
                     <h3>{produto.title}</h3>
 
-                    {produto.images?.length > 0 && (
+                    
+{produto.images?.length > 0 && (
+  <div
+    style={{
+      display: "flex",
+      flexWrap: "wrap",
+      gap: "10px",
+      marginBottom: "15px",
+    }}
+  >
+    {produto.images.map((url, index) => (
+      <img
+        key={url}
+        src={url}
+        alt={`Foto ${index + 1} do produto`}
+        style={{
+          width: "120px",
+          height: "120px",
+          objectFit: "cover",
+          borderRadius: "8px",
+        }}
+      />
+    ))}
+  </div>
+)}
+
+<p>Categoria: {produto.category}</p>
+<p>Descrição: {produto.description || "Sem descrição"}</p>
+<p>
+  Preço:{" "}
+  {produto.price_brl !== null
+    ? `R$ ${Number(produto.price_brl).toFixed(2)}`
+    : "Não informado"}
+</p>
+<p>
+  Diamantes: {produto.price_diamonds ?? "Não informado"}
+</p>
+<p>Estoque: {produto.stock}</p>
+<p>Status: {produto.status}</p>
+
+<button onClick={() => iniciarEdicao(produto)} style={botao}>
+  Editar
+</button>
+
+<button
+  onClick={() => excluirProduto(produto.id)}
+  disabled={carregando}
+  style={{ ...botao, background: "#d9534f", color: "#fff" }}
+>
+  Excluir
+</button>
+</>
+)}
+</article>
+))
+)}
+
+{mensagem && (
+  <p style={{ color: "#e7bd63", marginTop: "20px" }}>
+    {mensagem}
+  </p>
+)}
+</section>
+)}
+</main>
+);
+}
+
                   
