@@ -31,6 +31,8 @@ type Sale = {
   sold_at: string;
 };
 
+type SaleType = "brl" | "diamonds";
+
 const inputStyle = {
   width: "100%",
   padding: "13px",
@@ -52,6 +54,12 @@ const buttonStyle = {
   cursor: "pointer",
 };
 
+const secondaryButtonStyle = {
+  ...buttonStyle,
+  background: "#263247",
+  color: "#ffffff",
+};
+
 export default function PerfilVendedor() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -64,6 +72,9 @@ export default function PerfilVendedor() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+
+  const [saleProduct, setSaleProduct] = useState<Product | null>(null);
+  const [saleType, setSaleType] = useState<SaleType>("brl");
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -180,25 +191,52 @@ export default function PerfilVendedor() {
     setBusy(false);
   }
 
-  async function markAsSold(productId: string) {
-    const confirmed = window.confirm(
-      "Deseja realmente marcar este anúncio como vendido?"
-    );
+  function openSaleOptions(product: Product) {
+    if (product.price_brl !== null) {
+      setSaleType("brl");
+    } else {
+      setSaleType("diamonds");
+    }
 
-    if (!confirmed) return;
+    setSaleProduct(product);
+    setMessage("");
+  }
+
+  async function confirmSale() {
+    if (!saleProduct) return;
+
+    if (
+      saleType === "brl" &&
+      saleProduct.price_brl === null
+    ) {
+      setMessage("Este anúncio não possui preço em reais.");
+      return;
+    }
+
+    if (
+      saleType === "diamonds" &&
+      saleProduct.price_diamonds === null
+    ) {
+      setMessage("Este anúncio não possui preço em diamantes.");
+      return;
+    }
 
     setBusy(true);
     setMessage("");
 
     const { error } = await supabase.rpc(
       "marcar_produto_vendido",
-      { p_product_id: productId }
+      {
+        p_product_id: saleProduct.id,
+        p_sale_type: saleType,
+      }
     );
 
     if (error) {
       setMessage(error.message);
     } else {
       setMessage("Venda registrada com sucesso!");
+      setSaleProduct(null);
       await loadData();
     }
 
@@ -214,7 +252,8 @@ export default function PerfilVendedor() {
   );
 
   const totalBrl = sales.reduce(
-    (total, sale) => total + Number(sale.sale_price_brl || 0),
+    (total, sale) =>
+      total + Number(sale.sale_price_brl || 0),
     0
   );
 
@@ -273,6 +312,7 @@ export default function PerfilVendedor() {
           </form>
 
           {message && <p>{message}</p>}
+
           <p>
             <a href="/" style={{ color: "#d6ad55" }}>
               Voltar para a loja
@@ -314,7 +354,7 @@ export default function PerfilVendedor() {
           </div>
 
           <button
-            style={{ ...buttonStyle, background: "#263247", color: "white" }}
+            style={secondaryButtonStyle}
             onClick={logout}
           >
             Sair
@@ -341,7 +381,8 @@ export default function PerfilVendedor() {
                   ...buttonStyle,
                   background:
                     section === value ? "#d6ad55" : "#263247",
-                  color: section === value ? "#111827" : "#ffffff",
+                  color:
+                    section === value ? "#111827" : "#ffffff",
                 }}
               >
                 {label}
@@ -372,7 +413,9 @@ export default function PerfilVendedor() {
 
                 <div style={statStyle}>
                   <small>Total em diamantes</small>
-                  <h2>{totalDiamonds.toLocaleString("pt-BR")}</h2>
+                  <h2>
+                    {totalDiamonds.toLocaleString("pt-BR")}
+                  </h2>
                 </div>
 
                 <div style={statStyle}>
@@ -454,24 +497,43 @@ export default function PerfilVendedor() {
 
               {products.map((product) => (
                 <article key={product.id} style={itemStyle}>
-                  <div style={{ display: "flex", gap: "14px" }}>
-                    {product.images?.[0] && (
-                      <img
-                        src={product.images[0]}
-                        alt={product.title}
-                        style={imageStyle}
-                      />
-                    )}
+                  <div style={productRowStyle}>
+                    <a
+                      href={`/produto/${product.id}`}
+                      style={{ display: "block", flexShrink: 0 }}
+                      aria-label={`Ver anúncio ${product.title}`}
+                    >
+                      {product.images?.[0] ? (
+                        <img
+                          src={product.images[0]}
+                          alt={product.title}
+                          style={imageStyle}
+                        />
+                      ) : (
+                        <div style={imagePlaceholderStyle}>
+                          Sem foto
+                        </div>
+                      )}
+                    </a>
 
-                    <div style={{ flex: 1 }}>
-                      <h3>{product.title}</h3>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <h3 style={{ marginTop: 0 }}>
+                        <a
+                          href={`/produto/${product.id}`}
+                          style={productTitleLinkStyle}
+                        >
+                          {product.title}
+                        </a>
+                      </h3>
 
                       <p style={{ color: "#aab4c8" }}>
                         Categoria: {product.category}
                       </p>
 
                       {product.price_brl !== null && (
-                        <p>{money(Number(product.price_brl))}</p>
+                        <p>
+                          {money(Number(product.price_brl))}
+                        </p>
                       )}
 
                       {product.price_diamonds !== null && (
@@ -482,6 +544,10 @@ export default function PerfilVendedor() {
                       )}
 
                       <p>
+                        Estoque: {product.stock}
+                      </p>
+
+                      <p>
                         Status:{" "}
                         {product.status === "active"
                           ? "Ativo"
@@ -490,15 +556,31 @@ export default function PerfilVendedor() {
                           : product.status}
                       </p>
 
-                      {product.status === "active" && (
-                        <button
-                          style={buttonStyle}
-                          disabled={busy}
-                          onClick={() => markAsSold(product.id)}
+                      <div style={actionButtonsStyle}>
+                        <a
+                          href={`/produto/${product.id}`}
+                          style={linkButtonStyle}
                         >
-                          Marcar como vendido
-                        </button>
-                      )}
+                          Ver anúncio
+                        </a>
+
+                        <a
+                          href="/vendedor"
+                          style={secondaryLinkButtonStyle}
+                        >
+                          Editar anúncio
+                        </a>
+
+                        {product.status === "active" && (
+                          <button
+                            style={buttonStyle}
+                            disabled={busy}
+                            onClick={() => openSaleOptions(product)}
+                          >
+                            Marcar como vendido
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </article>
@@ -523,7 +605,9 @@ export default function PerfilVendedor() {
 
                 <div style={statStyle}>
                   <small>Total em diamantes</small>
-                  <h2>{totalDiamonds.toLocaleString("pt-BR")}</h2>
+                  <h2>
+                    {totalDiamonds.toLocaleString("pt-BR")}
+                  </h2>
                 </div>
               </div>
 
@@ -537,12 +621,13 @@ export default function PerfilVendedor() {
 
                   {sale.sale_price_brl !== null && (
                     <p>
-                      Valor: {money(Number(sale.sale_price_brl))}
+                      Vendido por: {money(Number(sale.sale_price_brl))}
                     </p>
                   )}
 
                   {sale.sale_price_diamonds !== null && (
                     <p>
+                      Vendido por:{" "}
                       {Number(sale.sale_price_diamonds).toLocaleString("pt-BR")}
                       {" diamantes"}
                     </p>
@@ -557,6 +642,75 @@ export default function PerfilVendedor() {
           )}
         </div>
       </div>
+
+      {saleProduct && (
+        <div style={modalOverlayStyle}>
+          <div style={modalStyle}>
+            <h2 style={{ marginTop: 0 }}>
+              Registrar venda
+            </h2>
+
+            <p>
+              Anúncio: <strong>{saleProduct.title}</strong>
+            </p>
+
+            <p>Por qual modalidade este produto foi vendido?</p>
+
+            {saleProduct.price_brl !== null && (
+              <label style={choiceStyle}>
+                <input
+                  type="radio"
+                  name="saleType"
+                  value="brl"
+                  checked={saleType === "brl"}
+                  onChange={() => setSaleType("brl")}
+                />
+                <span>
+                  Reais — {money(Number(saleProduct.price_brl))}
+                </span>
+              </label>
+            )}
+
+            {saleProduct.price_diamonds !== null && (
+              <label style={choiceStyle}>
+                <input
+                  type="radio"
+                  name="saleType"
+                  value="diamonds"
+                  checked={saleType === "diamonds"}
+                  onChange={() => setSaleType("diamonds")}
+                />
+                <span>
+                  Diamantes —{" "}
+                  {Number(saleProduct.price_diamonds).toLocaleString("pt-BR")}
+                </span>
+              </label>
+            )}
+
+            <p style={{ color: "#aab4c8", fontSize: "13px" }}>
+              Somente a modalidade escolhida será registrada no histórico.
+            </p>
+
+            <div style={actionButtonsStyle}>
+              <button
+                style={buttonStyle}
+                disabled={busy}
+                onClick={confirmSale}
+              >
+                {busy ? "Registrando..." : "Confirmar venda"}
+              </button>
+
+              <button
+                style={secondaryButtonStyle}
+                disabled={busy}
+                onClick={() => setSaleProduct(null)}
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
@@ -619,4 +773,78 @@ const imageStyle = {
   objectFit: "cover" as const,
   borderRadius: "8px",
 };
-  
+
+const imagePlaceholderStyle = {
+  ...imageStyle,
+  background: "#111827",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  color: "#aab4c8",
+  fontSize: "12px",
+};
+
+const productRowStyle = {
+  display: "flex",
+  flexWrap: "wrap" as const,
+  gap: "14px",
+};
+
+const productTitleLinkStyle = {
+  color: "#ffffff",
+  textDecoration: "none",
+};
+
+const actionButtonsStyle = {
+  display: "flex",
+  flexWrap: "wrap" as const,
+  gap: "9px",
+  marginTop: "14px",
+};
+
+const linkButtonStyle = {
+  ...buttonStyle,
+  display: "inline-block",
+  textDecoration: "none",
+  textAlign: "center" as const,
+};
+
+const secondaryLinkButtonStyle = {
+  ...secondaryButtonStyle,
+  display: "inline-block",
+  textDecoration: "none",
+  textAlign: "center" as const,
+};
+
+const modalOverlayStyle = {
+  position: "fixed" as const,
+  inset: 0,
+  background: "rgba(0,0,0,0.78)",
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+  padding: "18px",
+  zIndex: 1000,
+};
+
+const modalStyle = {
+  width: "100%",
+  maxWidth: "440px",
+  background: "#151e2e",
+  border: "1px solid #39445b",
+  borderRadius: "14px",
+  padding: "22px",
+  color: "#ffffff",
+};
+
+const choiceStyle = {
+  display: "flex",
+  alignItems: "center",
+  gap: "12px",
+  background: "#202c40",
+  padding: "14px",
+  borderRadius: "9px",
+  marginTop: "10px",
+  marginBottom: "10px",
+  cursor: "pointer",
+};
