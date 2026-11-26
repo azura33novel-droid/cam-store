@@ -56,10 +56,10 @@ export default function PainelVendedor() {
     };
   }, [previews]);
 
-  const campo = {
+  const campo: React.CSSProperties = {
     display: "block",
     width: "100%",
-    boxSizing: "border-box" as const,
+    boxSizing: "border-box",
     padding: "12px",
     margin: "8px 0 18px",
     background: "#080d18",
@@ -68,16 +68,35 @@ export default function PainelVendedor() {
     borderRadius: "8px",
   };
 
-  const botao = {
+  const botao: React.CSSProperties = {
     padding: "12px 18px",
     margin: "8px 8px 8px 0",
     border: "none",
     borderRadius: "8px",
     background: "#d5aa50",
     color: "#101522",
-    fontWeight: "bold" as const,
+    fontWeight: "bold",
     cursor: "pointer",
   };
+
+  function iniciarEdicao(produto: Product) {
+    setEditando(produto.id);
+    setEditTitulo(produto.title);
+    setEditCategoria(produto.category);
+    setEditDescricao(produto.description || "");
+    setEditPreco(
+      produto.price_brl !== null ? String(produto.price_brl) : ""
+    );
+    setEditDiamantes(
+      produto.price_diamonds !== null
+        ? String(produto.price_diamonds)
+        : ""
+    );
+    setEditEstoque(String(produto.stock));
+    setMensagem("");
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
 
   async function carregarPainel() {
     const { data: userData } = await supabase.auth.getUser();
@@ -118,7 +137,27 @@ export default function PainelVendedor() {
       return;
     }
 
-    setProdutos(data || []);
+    const listaProdutos = (data || []) as Product[];
+    setProdutos(listaProdutos);
+
+    // Verifica se o painel foi aberto para editar um anúncio específico.
+    const parametros = new URLSearchParams(window.location.search);
+    const produtoId = parametros.get("editar");
+
+    if (produtoId) {
+      const produtoSelecionado = listaProdutos.find(
+        (produto) => produto.id === produtoId
+      );
+
+      if (produtoSelecionado) {
+        iniciarEdicao(produtoSelecionado);
+
+        // Limpa o parâmetro da URL depois de localizar o produto.
+        window.history.replaceState({}, "", "/vendedor");
+      } else {
+        setMensagem("Não foi possível localizar esse anúncio.");
+      }
+    }
   }
 
   async function entrar(e: React.FormEvent<HTMLFormElement>) {
@@ -257,7 +296,9 @@ export default function PainelVendedor() {
       .single();
 
     if (error || !produto) {
-      setMensagem("Erro ao cadastrar: " + (error?.message || "Produto não criado."));
+      setMensagem(
+        "Erro ao cadastrar: " + (error?.message || "Produto não criado.")
+      );
       setCarregando(false);
       return;
     }
@@ -286,7 +327,8 @@ export default function PainelVendedor() {
         erro instanceof Error ? erro.message : "Erro desconhecido";
 
       setMensagem(
-        "Produto criado, mas houve um problema ao enviar as fotos: " + detalhe
+        "Produto criado, mas houve um problema ao enviar as fotos: " +
+          detalhe
       );
     }
 
@@ -303,23 +345,6 @@ export default function PainelVendedor() {
 
     await carregarPainel();
     setCarregando(false);
-  }
-
-  function iniciarEdicao(produto: Product) {
-    setEditando(produto.id);
-    setEditTitulo(produto.title);
-    setEditCategoria(produto.category);
-    setEditDescricao(produto.description || "");
-    setEditPreco(
-      produto.price_brl !== null ? String(produto.price_brl) : ""
-    );
-    setEditDiamantes(
-      produto.price_diamonds !== null
-        ? String(produto.price_diamonds)
-        : ""
-    );
-    setEditEstoque(String(produto.stock));
-    setMensagem("");
   }
 
   async function salvarEdicao(id: string) {
@@ -352,6 +377,7 @@ export default function PainelVendedor() {
     }
 
     setCarregando(true);
+    setMensagem("");
 
     const { error } = await supabase
       .from("products")
@@ -411,6 +437,7 @@ export default function PainelVendedor() {
     setStatusPerfil("");
     setProdutos([]);
     setSenha("");
+    setEditando(null);
     setMensagem("");
   }
 
@@ -439,6 +466,7 @@ export default function PainelVendedor() {
           <h1 style={{ color: "#e7bd63", textAlign: "center" }}>
             CAM STORE
           </h1>
+
           <h2 style={{ textAlign: "center" }}>Área do vendedor</h2>
 
           <label>E-mail</label>
@@ -501,6 +529,23 @@ export default function PainelVendedor() {
           <button onClick={sair} style={botao}>
             Sair
           </button>
+
+          {editando && (
+            <div
+              style={{
+                background: "#172b3e",
+                border: "1px solid #00d9ff",
+                borderRadius: "10px",
+                padding: "14px",
+                marginTop: "20px",
+              }}
+            >
+              <strong>Você está editando um anúncio.</strong>
+              <p style={{ marginBottom: 0, color: "#c1ccda" }}>
+                Altere os dados e salve para atualizar o anúncio.
+              </p>
+            </div>
+          )}
 
           <hr style={{ borderColor: "#35435a", margin: "25px 0" }} />
 
@@ -582,6 +627,7 @@ export default function PainelVendedor() {
               onChange={(e) => selecionarFotos(e.target.files)}
               style={{ ...campo, padding: "10px" }}
             />
+
             <p style={{ color: "#aab4c5", fontSize: "13px" }}>
               Formatos JPG, PNG ou WEBP. Máximo de 5 MB por foto.
             </p>
@@ -627,7 +673,9 @@ export default function PainelVendedor() {
                 key={produto.id}
                 style={{
                   background: "#111a2b",
-                  border: "1px solid #35435a",
+                  border: editando === produto.id
+                    ? "1px solid #00d9ff"
+                    : "1px solid #35435a",
                   borderRadius: "10px",
                   padding: "18px",
                   marginTop: "15px",
@@ -698,7 +746,7 @@ export default function PainelVendedor() {
                       disabled={carregando}
                       style={botao}
                     >
-                      Salvar alterações
+                      {carregando ? "Salvando..." : "Salvar alterações"}
                     </button>
 
                     <button
@@ -713,72 +761,79 @@ export default function PainelVendedor() {
                   <>
                     <h3>{produto.title}</h3>
 
-                    
-{produto.images?.length > 0 && (
-  <div
-    style={{
-      display: "flex",
-      flexWrap: "wrap",
-      gap: "10px",
-      marginBottom: "15px",
-    }}
-  >
-    {produto.images.map((url, index) => (
-      <img
-        key={url}
-        src={url}
-        alt={`Foto ${index + 1} do produto`}
-        style={{
-          width: "120px",
-          height: "120px",
-          objectFit: "cover",
-          borderRadius: "8px",
-        }}
-      />
-    ))}
-  </div>
-)}
+                    {produto.images?.length > 0 && (
+                      <div
+                        style={{
+                          display: "flex",
+                          flexWrap: "wrap",
+                          gap: "10px",
+                          marginBottom: "15px",
+                        }}
+                      >
+                        {produto.images.map((url, index) => (
+                          <img
+                            key={url}
+                            src={url}
+                            alt={`Foto ${index + 1} do produto`}
+                            style={{
+                              width: "120px",
+                              height: "120px",
+                              objectFit: "cover",
+                              borderRadius: "8px",
+                            }}
+                          />
+                        ))}
+                      </div>
+                    )}
 
-<p>Categoria: {produto.category}</p>
-<p>Descrição: {produto.description || "Sem descrição"}</p>
-<p>
-  Preço:{" "}
-  {produto.price_brl !== null
-    ? `R$ ${Number(produto.price_brl).toFixed(2)}`
-    : "Não informado"}
-</p>
-<p>
-  Diamantes: {produto.price_diamonds ?? "Não informado"}
-</p>
-<p>Estoque: {produto.stock}</p>
-<p>Status: {produto.status}</p>
+                    <p>Categoria: {produto.category}</p>
+                    <p>
+                      Descrição: {produto.description || "Sem descrição"}
+                    </p>
+                    <p>
+                      Preço:{" "}
+                      {produto.price_brl !== null
+                        ? `R$ ${Number(produto.price_brl).toFixed(2)}`
+                        : "Não informado"}
+                    </p>
+                    <p>
+                      Diamantes:{" "}
+                      {produto.price_diamonds ?? "Não informado"}
+                    </p>
+                    <p>Estoque: {produto.stock}</p>
+                    <p>Status: {produto.status}</p>
 
-<button onClick={() => iniciarEdicao(produto)} style={botao}>
-  Editar
-</button>
+                    <button
+                      onClick={() => iniciarEdicao(produto)}
+                      style={botao}
+                    >
+                      Editar
+                    </button>
 
-<button
-  onClick={() => excluirProduto(produto.id)}
-  disabled={carregando}
-  style={{ ...botao, background: "#d9534f", color: "#fff" }}
->
-  Excluir
-</button>
-</>
-)}
-</article>
-))
-)}
+                    <button
+                      onClick={() => excluirProduto(produto.id)}
+                      disabled={carregando}
+                      style={{
+                        ...botao,
+                        background: "#d9534f",
+                        color: "#fff",
+                      }}
+                    >
+                      Excluir
+                    </button>
+                  </>
+                )}
+              </article>
+            ))
+          )}
 
-{mensagem && (
-  <p style={{ color: "#e7bd63", marginTop: "20px" }}>
-    {mensagem}
-  </p>
-)}
-</section>
-)}
-</main>
-);
-}
-
-                  
+          {mensagem && (
+            <p style={{ color: "#e7bd63", marginTop: "20px" }}>
+              {mensagem}
+            </p>
+          )}
+        </section>
+      )}
+    </main>
+  );
+                }
