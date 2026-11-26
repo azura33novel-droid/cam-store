@@ -33,31 +33,64 @@ type Sale = {
 
 type SaleType = "brl" | "diamonds";
 
-const inputStyle = {
-  width: "100%",
-  padding: "13px",
-  borderRadius: "9px",
-  border: "1px solid #39445b",
-  background: "#111827",
-  color: "#ffffff",
-  marginTop: "7px",
-  marginBottom: "15px",
+const colors = {
+  background: "#080d18",
+  panel: "#111b2d",
+  card: "#17243a",
+  cardHover: "#1c2b43",
+  border: "#263750",
+  gold: "#e2bb67",
+  cyan: "#45d6e8",
+  green: "#27c98a",
+  red: "#ff6577",
+  text: "#f4f7fc",
+  muted: "#98a9c2",
 };
 
 const buttonStyle = {
-  padding: "12px 18px",
-  borderRadius: "9px",
   border: "none",
-  background: "#d6ad55",
+  borderRadius: "10px",
+  padding: "12px 17px",
+  background: colors.gold,
   color: "#111827",
-  fontWeight: "bold" as const,
+  fontWeight: 800,
   cursor: "pointer",
+  fontSize: "13px",
 };
 
 const secondaryButtonStyle = {
   ...buttonStyle,
-  background: "#263247",
-  color: "#ffffff",
+  background: "#263750",
+  color: colors.text,
+};
+
+const inputStyle = {
+  width: "100%",
+  boxSizing: "border-box" as const,
+  padding: "14px",
+  borderRadius: "10px",
+  border: `1px solid ${colors.border}`,
+  background: "#0b1424",
+  color: colors.text,
+  marginTop: "8px",
+  marginBottom: "18px",
+  outline: "none",
+  fontSize: "14px",
+};
+
+const panelStyle = {
+  background: colors.panel,
+  border: `1px solid ${colors.border}`,
+  borderRadius: "18px",
+  padding: "22px",
+  marginTop: "20px",
+};
+
+const itemStyle = {
+  background: colors.card,
+  border: `1px solid ${colors.border}`,
+  borderRadius: "15px",
+  padding: "17px",
 };
 
 export default function PerfilVendedor() {
@@ -84,6 +117,8 @@ export default function PerfilVendedor() {
 
     if (!authData.user) {
       setProfile(null);
+      setProducts([]);
+      setSales([]);
       setLoading(false);
       return;
     }
@@ -166,6 +201,7 @@ export default function PerfilVendedor() {
     setProducts([]);
     setSales([]);
     setMessage("");
+    setSection("inicio");
   }
 
   async function saveProfile(e: React.FormEvent) {
@@ -272,10 +308,28 @@ export default function PerfilVendedor() {
   const date = (value: string) =>
     new Date(value).toLocaleDateString("pt-BR");
 
+  function changeSection(value: string) {
+    setMessage("");
+    setSection(value);
+  }
+
+  const menuItems = [
+    { id: "inicio", icon: "⌂", label: "Visão geral" },
+    { id: "perfil", icon: "◉", label: "Meu perfil" },
+    { id: "anuncios", icon: "▣", label: "Meus anúncios" },
+    { id: "vendas", icon: "▤", label: "Minhas vendas" },
+  ];
+
   if (loading) {
     return (
       <main style={pageStyle}>
-        <p>Carregando seu perfil...</p>
+        <div style={loadingStyle}>
+          <div style={loadingLogo}>CAM</div>
+          <h2>Carregando painel...</h2>
+          <p style={{ color: colors.muted }}>
+            Preparando sua área de vendedor.
+          </p>
+        </div>
       </main>
     );
   }
@@ -283,41 +337,54 @@ export default function PerfilVendedor() {
   if (!profile) {
     return (
       <main style={pageStyle}>
-        <div style={panelStyle}>
-          <h1 style={{ color: "#d6ad55" }}>CAM STORE</h1>
-          <h2>Entrar no perfil do vendedor</h2>
+        <div style={loginWrapper}>
+          <div style={loginCard}>
+            <div style={brandMark}>CAM STORE</div>
+            <div style={loginIcon}>♛</div>
+            <h1 style={{ marginBottom: "8px" }}>
+              Área do vendedor
+            </h1>
+            <p style={{ color: colors.muted, marginTop: 0 }}>
+              Entre na sua conta para gerenciar sua loja.
+            </p>
 
-          <form onSubmit={login}>
-            <label>E-mail</label>
-            <input
-              style={inputStyle}
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
+            <form onSubmit={login}>
+              <label style={labelStyle}>E-mail</label>
+              <input
+                style={inputStyle}
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="seuemail@exemplo.com"
+                required
+              />
 
-            <label>Senha</label>
-            <input
-              style={inputStyle}
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+              <label style={labelStyle}>Senha</label>
+              <input
+                style={inputStyle}
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Sua senha"
+                required
+              />
 
-            <button style={buttonStyle} disabled={busy}>
-              {busy ? "Entrando..." : "Entrar"}
-            </button>
-          </form>
+              <button
+                style={{ ...buttonStyle, width: "100%", padding: "15px" }}
+                disabled={busy}
+              >
+                {busy ? "Entrando..." : "Entrar no painel"}
+              </button>
+            </form>
 
-          {message && <p>{message}</p>}
+            {message && (
+              <p style={errorMessage}>{message}</p>
+            )}
 
-          <p>
-            <a href="/" style={{ color: "#d6ad55" }}>
-              Voltar para a loja
+            <a href="/" style={backLink}>
+              ← Voltar para a loja
             </a>
-          </p>
+          </div>
         </div>
       </main>
     );
@@ -326,15 +393,18 @@ export default function PerfilVendedor() {
   if (profile.status !== "approved") {
     return (
       <main style={pageStyle}>
-        <div style={panelStyle}>
-          <h2>Perfil não aprovado</h2>
-          <p>
-            Seu cadastro ainda não está aprovado para vender
-            na CAM Store.
-          </p>
-          <button style={buttonStyle} onClick={logout}>
-            Sair da conta
-          </button>
+        <div style={loginWrapper}>
+          <div style={loginCard}>
+            <div style={brandMark}>CAM STORE</div>
+            <h2>Cadastro aguardando aprovação</h2>
+            <p style={{ color: colors.muted }}>
+              Seu perfil ainda não está aprovado para vender
+              na CAM Store.
+            </p>
+            <button style={buttonStyle} onClick={logout}>
+              Sair da conta
+            </button>
+          </div>
         </div>
       </main>
     );
@@ -342,322 +412,565 @@ export default function PerfilVendedor() {
 
   return (
     <main style={pageStyle}>
-      <div style={{ maxWidth: "1050px", margin: "auto" }}>
-        <header style={headerStyle}>
+      <div style={dashboard}>
+        <header style={topHeader}>
+          <a href="/" style={brandLink}>
+            <span style={crown}>♛</span>
+            <span>
+              <strong>CAM STORE</strong>
+              <small>PAINEL DO VENDEDOR</small>
+            </span>
+          </a>
+
+          <div style={headerActions}>
+            <a href="/" style={storeButton}>
+              ↗ Ver loja
+            </a>
+            <button style={logoutButton} onClick={logout}>
+              Sair da conta
+            </button>
+          </div>
+        </header>
+
+        <section style={welcomeSection}>
           <div>
-            <h1 style={{ color: "#d6ad55", margin: 0 }}>
-              CAM STORE
+            <span style={eyebrow}>CENTRAL DO VENDEDOR</span>
+            <h1 style={welcomeTitle}>
+              Olá, <span style={{ color: colors.gold }}>
+                {profile.display_name}
+              </span>
             </h1>
-            <p style={{ color: "#aab4c8" }}>
-              Painel do vendedor
+            <p style={{ color: colors.muted, marginBottom: 0 }}>
+              Gerencie seus anúncios e acompanhe o desempenho da sua loja.
             </p>
           </div>
 
-          <button
-            style={secondaryButtonStyle}
-            onClick={logout}
-          >
-            Sair
-          </button>
-        </header>
+          <div style={approvedBadge}>
+            <span style={onlineDot} />
+            Vendedor aprovado
+          </div>
+        </section>
 
-        <div style={panelStyle}>
-          <h2>Olá, {profile.display_name}!</h2>
-          <p style={{ color: "#aab4c8" }}>
-            Gerencie seu perfil, anúncios e vendas.
-          </p>
+        <nav style={navigation}>
+          {menuItems.map((item) => (
+            <button
+              key={item.id}
+              onClick={() => changeSection(item.id)}
+              style={{
+                ...navButton,
+                ...(section === item.id ? navButtonActive : {}),
+              }}
+            >
+              <span style={{ fontSize: "19px" }}>{item.icon}</span>
+              {item.label}
+            </button>
+          ))}
+        </nav>
 
-          <nav style={navStyle}>
-            {[
-              ["inicio", "Visão geral"],
-              ["perfil", "Meu perfil"],
-              ["anuncios", "Meus anúncios"],
-              ["vendas", "Minhas vendas"],
-            ].map(([value, label]) => (
+        {message && (
+          <div style={noticeStyle}>
+            <span>{message}</span>
+            <button
+              onClick={() => setMessage("")}
+              style={closeNotice}
+            >
+              ×
+            </button>
+          </div>
+        )}
+
+        {section === "inicio" && (
+          <>
+            <section style={sectionHeading}>
+              <div>
+                <span style={eyebrow}>DESEMPENHO</span>
+                <h2 style={sectionTitle}>Visão geral</h2>
+                <p style={subtitle}>
+                  Acompanhe os números da sua loja.
+                </p>
+              </div>
               <button
-                key={value}
-                onClick={() => setSection(value)}
-                style={{
-                  ...buttonStyle,
-                  background:
-                    section === value ? "#d6ad55" : "#263247",
-                  color:
-                    section === value ? "#111827" : "#ffffff",
-                }}
+                style={refreshButton}
+                onClick={loadData}
+                disabled={busy}
               >
-                {label}
+                ↻ Atualizar dados
               </button>
-            ))}
-          </nav>
+            </section>
 
-          {message && (
-            <p style={{ color: "#d6ad55", marginTop: "18px" }}>
-              {message}
+            <div style={statsGrid}>
+              <div style={statCard}>
+                <div style={statTop}>
+                  <span>Vendas realizadas</span>
+                  <span style={statIcon}>▤</span>
+                </div>
+                <strong style={statNumber}>{sales.length}</strong>
+                <small style={statDescription}>
+                  Produtos vendidos
+                </small>
+              </div>
+
+              <div style={statCard}>
+                <div style={statTop}>
+                  <span>Faturamento em reais</span>
+                  <span style={statIcon}>R$</span>
+                </div>
+                <strong style={{ ...statNumber, color: colors.green }}>
+                  {money(totalBrl)}
+                </strong>
+                <small style={statDescription}>
+                  Vendas registradas em reais
+                </small>
+              </div>
+
+              <div style={statCard}>
+                <div style={statTop}>
+                  <span>Vendas em diamantes</span>
+                  <span style={statIcon}>◆</span>
+                </div>
+                <strong style={{ ...statNumber, color: colors.cyan }}>
+                  {totalDiamonds.toLocaleString("pt-BR")}
+                </strong>
+                <small style={statDescription}>
+                  Diamantes vendidos
+                </small>
+              </div>
+
+              <div style={statCard}>
+                <div style={statTop}>
+                  <span>Anúncios ativos</span>
+                  <span style={statIcon}>▣</span>
+                </div>
+                <strong style={statNumber}>
+                  {activeProducts.length}
+                </strong>
+                <small style={statDescription}>
+                  {soldProducts.length} vendidos
+                </small>
+              </div>
+            </div>
+
+            <section style={panelStyle}>
+              <div style={panelHeading}>
+                <div>
+                  <h2 style={panelTitle}>Acesso rápido</h2>
+                  <p style={subtitle}>
+                    Escolha o que deseja gerenciar.
+                  </p>
+                </div>
+              </div>
+
+              <div style={quickGrid}>
+                <button
+                  style={quickCard}
+                  onClick={() => changeSection("perfil")}
+                >
+                  <span style={quickIcon}>◉</span>
+                  <strong>Meu perfil</strong>
+                  <small>Editar nome e WhatsApp</small>
+                  <span style={quickArrow}>→</span>
+                </button>
+
+                <button
+                  style={quickCard}
+                  onClick={() => changeSection("anuncios")}
+                >
+                  <span style={quickIcon}>▣</span>
+                  <strong>Meus anúncios</strong>
+                  <small>Gerenciar seus produtos</small>
+                  <span style={quickArrow}>→</span>
+                </button>
+
+                <button
+                  style={quickCard}
+                  onClick={() => changeSection("vendas")}
+                >
+                  <span style={quickIcon}>▤</span>
+                  <strong>Minhas vendas</strong>
+                  <small>Consultar seu histórico</small>
+                  <span style={quickArrow}>→</span>
+                </button>
+              </div>
+            </section>
+
+            <section style={panelStyle}>
+              <div style={panelHeading}>
+                <div>
+                  <h2 style={panelTitle}>Últimas vendas</h2>
+                  <p style={subtitle}>
+                    Suas vendas mais recentes.
+                  </p>
+                </div>
+                <button
+                  style={textButton}
+                  onClick={() => changeSection("vendas")}
+                >
+                  Ver todas →
+                </button>
+              </div>
+
+              {sales.length === 0 ? (
+                <p style={emptyText}>
+                  Nenhuma venda registrada até o momento.
+                </p>
+              ) : (
+                sales.slice(0, 4).map((sale) => (
+                  <div key={sale.id} style={saleRow}>
+                    <div style={saleSymbol}>✓</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <strong>{sale.product_title}</strong>
+                      <small style={mutedBlock}>
+                        {date(sale.sold_at)}
+                      </small>
+                    </div>
+                    <strong style={{ color: colors.green }}>
+                      {sale.sale_price_brl !== null
+                        ? money(Number(sale.sale_price_brl))
+                        : `${Number(sale.sale_price_diamonds).toLocaleString("pt-BR")} diamantes`}
+                    </strong>
+                  </div>
+                ))
+              )}
+            </section>
+          </>
+        )}
+
+        {section === "perfil" && (
+          <section style={panelStyle}>
+            <span style={eyebrow}>CONFIGURAÇÕES DA CONTA</span>
+            <h2 style={sectionTitle}>Meu perfil</h2>
+            <p style={subtitle}>
+              Atualize as informações que os compradores verão na sua loja.
             </p>
-          )}
 
-          {section === "inicio" && (
-            <section>
-              <h2>Resumo das vendas</h2>
-
-              <div style={statsGrid}>
-                <div style={statStyle}>
-                  <small>Produtos vendidos</small>
-                  <h2>{sales.length}</h2>
-                </div>
-
-                <div style={statStyle}>
-                  <small>Total em reais</small>
-                  <h2>{money(totalBrl)}</h2>
-                </div>
-
-                <div style={statStyle}>
-                  <small>Total em diamantes</small>
-                  <h2>
-                    {totalDiamonds.toLocaleString("pt-BR")}
-                  </h2>
-                </div>
-
-                <div style={statStyle}>
-                  <small>Anúncios ativos</small>
-                  <h2>{activeProducts.length}</h2>
-                </div>
+            <form onSubmit={saveProfile} style={profileForm}>
+              <div style={profileAvatar}>
+                {profile.display_name.slice(0, 1).toUpperCase()}
               </div>
 
-              <h2>Atalhos</h2>
+              <label style={labelStyle}>Nome do vendedor</label>
+              <input
+                style={inputStyle}
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                minLength={2}
+                placeholder="Nome da sua loja ou perfil"
+              />
 
-              <div style={navStyle}>
-                <button
-                  style={buttonStyle}
-                  onClick={() => setSection("perfil")}
-                >
-                  Editar perfil
-                </button>
+              <label style={labelStyle}>Link do WhatsApp</label>
+              <input
+                style={inputStyle}
+                value={whatsapp}
+                onChange={(e) => setWhatsapp(e.target.value)}
+                placeholder="https://wa.me/5511999999999"
+                required
+              />
 
-                <button
-                  style={buttonStyle}
-                  onClick={() => setSection("anuncios")}
-                >
-                  Ver meus anúncios
-                </button>
-
-                <button
-                  style={buttonStyle}
-                  onClick={() => setSection("vendas")}
-                >
-                  Ver histórico de vendas
-                </button>
-              </div>
-            </section>
-          )}
-
-          {section === "perfil" && (
-            <section>
-              <h2>Meu perfil</h2>
-
-              <form onSubmit={saveProfile}>
-                <label>Nome do vendedor</label>
-                <input
-                  style={inputStyle}
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                  minLength={2}
-                />
-
-                <label>Link do WhatsApp</label>
-                <input
-                  style={inputStyle}
-                  value={whatsapp}
-                  onChange={(e) => setWhatsapp(e.target.value)}
-                  placeholder="https://wa.me/5511999999999"
-                  required
-                />
-
-                <button style={buttonStyle} disabled={busy}>
-                  {busy ? "Salvando..." : "Salvar alterações"}
-                </button>
-              </form>
-            </section>
-          )}
-
-          {section === "anuncios" && (
-            <section>
-              <h2>Meus anúncios</h2>
-
-              <p>
-                <strong>{activeProducts.length}</strong> ativos
-                {" · "}
-                <strong>{soldProducts.length}</strong> vendidos
+              <p style={helperText}>
+                Esse contato será utilizado pelos compradores para falar diretamente com você.
               </p>
 
-              {products.length === 0 && (
-                <p>Você ainda não possui anúncios.</p>
-              )}
+              <button
+                style={buttonStyle}
+                disabled={busy}
+              >
+                {busy ? "Salvando..." : "✓ Salvar alterações"}
+              </button>
+            </form>
+          </section>
+        )}
 
-              {products.map((product) => (
-                <article key={product.id} style={itemStyle}>
-                  <div style={productRowStyle}>
+        {section === "anuncios" && (
+          <>
+            <section style={sectionHeading}>
+              <div>
+                <span style={eyebrow}>GERENCIAMENTO</span>
+                <h2 style={sectionTitle}>Meus anúncios</h2>
+                <p style={subtitle}>
+                  Gerencie seus produtos publicados na CAM Store.
+                </p>
+              </div>
+
+              <a href="/vendedor" style={buttonLink}>
+                + Gerenciar anúncios
+              </a>
+            </section>
+
+            <div style={miniStats}>
+              <div style={miniStat}>
+                <strong>{products.length}</strong>
+                <small>Total de anúncios</small>
+              </div>
+              <div style={miniStat}>
+                <strong style={{ color: colors.green }}>
+                  {activeProducts.length}
+                </strong>
+                <small>Ativos</small>
+              </div>
+              <div style={miniStat}>
+                <strong style={{ color: colors.gold }}>
+                  {soldProducts.length}
+                </strong>
+                <small>Vendidos</small>
+              </div>
+            </div>
+
+            {products.length === 0 ? (
+              <div style={emptyCard}>
+                <span style={emptyIcon}>▣</span>
+                <h3>Você ainda não possui anúncios</h3>
+                <p style={subtitle}>
+                  Comece adicionando seu primeiro produto à CAM Store.
+       </p>
+                <a href="/vendedor" style={buttonLink}>
+                  Criar anúncio
+                </a>
+              </div>
+            ) : (
+              <div style={productsGrid}>
+                {products.map((product) => (
+                  <article key={product.id} style={productCard}>
                     <a
                       href={`/produto/${product.id}`}
-                      style={{ display: "block", flexShrink: 0 }}
-                      aria-label={`Ver anúncio ${product.title}`}
+                      style={productImageLink}
                     >
                       {product.images?.[0] ? (
                         <img
                           src={product.images[0]}
                           alt={product.title}
-                          style={imageStyle}
+                          style={productImage}
                         />
                       ) : (
-                        <div style={imagePlaceholderStyle}>
-                          Sem foto
+                        <div style={productPlaceholder}>
+                          <span>▣</span>
+                          <small>Sem foto</small>
                         </div>
                       )}
+
+                      <span
+                        style={{
+                          ...statusBadge,
+                          background:
+                            product.status === "active"
+                              ? "rgba(39,201,138,0.16)"
+                              : product.status === "sold"
+                              ? "rgba(226,187,103,0.16)"
+                              : "rgba(152,169,194,0.16)",
+                          color:
+                            product.status === "active"
+                              ? colors.green
+                              : product.status === "sold"
+                              ? colors.gold
+                              : colors.muted,
+                        }}
+                      >
+                        {product.status === "active"
+                          ? "● Ativo"
+                          : product.status === "sold"
+                          ? "✓ Vendido"
+                          : product.status}
+                      </span>
                     </a>
 
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <h3 style={{ marginTop: 0 }}>
-                        <a
-                          href={`/produto/${product.id}`}
-                          style={productTitleLinkStyle}
-                        >
-                          {product.title}
-                        </a>
+                    <div style={productContent}>
+                      <small style={categoryLabel}>
+                        {product.category}
+                      </small>
+
+                      <h3 style={productName}>
+                        {product.title}
                       </h3>
 
-                      <p style={{ color: "#aab4c8" }}>
-                        Categoria: {product.category}
-                      </p>
+                      <div style={productPrices}>
+                        {product.price_brl !== null && (
+                          <strong>
+                            {money(Number(product.price_brl))}
+                          </strong>
+                        )}
 
-                      {product.price_brl !== null && (
-                        <p>
-                          {money(Number(product.price_brl))}
-                        </p>
-                      )}
+                        {product.price_brl !== null &&
+                          product.price_diamonds !== null && (
+                            <small style={{ color: colors.gold }}>
+                              OU
+                            </small>
+                          )}
 
-                      {product.price_diamonds !== null && (
-                        <p>
-                          {Number(product.price_diamonds).toLocaleString("pt-BR")}
-                          {" diamantes"}
-                        </p>
-                      )}
+                        {product.price_diamonds !== null && (
+                          <strong style={{ color: colors.cyan }}>
+                            {Number(product.price_diamonds).toLocaleString("pt-BR")} ◆
+                          </strong>
+                        )}
+                      </div>
 
-                      <p>
+                      <small style={stockLabel}>
                         Estoque: {product.stock}
-                      </p>
+                      </small>
 
-                      <p>
-                        Status:{" "}
-                        {product.status === "active"
-                          ? "Ativo"
-                          : product.status === "sold"
-                          ? "Vendido"
-                          : product.status}
-                      </p>
-
-                      <div style={actionButtonsStyle}>
+                      <div style={productActions}>
                         <a
                           href={`/produto/${product.id}`}
-                          style={linkButtonStyle}
+                          style={viewProductButton}
                         >
                           Ver anúncio
                         </a>
 
                         <a
-                          href="/vendedor"
-                          style={secondaryLinkButtonStyle}
+                          href={`/vendedor?editar=${encodeURIComponent(product.id)}`}
+                          style={editProductButton}
                         >
-                          Editar anúncio
+                          ✎ Editar
                         </a>
-
-                        {product.status === "active" && (
-                          <button
-                            style={buttonStyle}
-                            disabled={busy}
-                            onClick={() => openSaleOptions(product)}
-                          >
-                            Marcar como vendido
-                          </button>
-                        )}
                       </div>
+
+                      {product.status === "active" && (
+                        <button
+                          style={soldButton}
+                          disabled={busy}
+                          onClick={() => openSaleOptions(product)}
+                        >
+                          ✓ Marcar como vendido
+                        </button>
+                      )}
                     </div>
-                  </div>
-                </article>
-              ))}
+                  </article>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {section === "vendas" && (
+          <>
+            <section style={sectionHeading}>
+              <div>
+                <span style={eyebrow}>DESEMPENHO FINANCEIRO</span>
+                <h2 style={sectionTitle}>Minhas vendas</h2>
+                <p style={subtitle}>
+                  Consulte todas as vendas registradas na sua conta.
+                </p>
+              </div>
             </section>
-          )}
 
-          {section === "vendas" && (
-            <section>
-              <h2>Histórico de vendas</h2>
-
-              <div style={statsGrid}>
-                <div style={statStyle}>
-                  <small>Quantidade</small>
-                  <h2>{sales.length}</h2>
+            <div style={statsGrid}>
+              <div style={statCard}>
+                <div style={statTop}>
+                  <span>Quantidade vendida</span>
+                  <span style={statIcon}>▤</span>
                 </div>
-
-                <div style={statStyle}>
-                  <small>Total em reais</small>
-                  <h2>{money(totalBrl)}</h2>
-                </div>
-
-                <div style={statStyle}>
-                  <small>Total em diamantes</small>
-                  <h2>
-                    {totalDiamonds.toLocaleString("pt-BR")}
-                  </h2>
-                </div>
+                <strong style={statNumber}>{sales.length}</strong>
               </div>
 
-              {sales.length === 0 && (
-                <p>Você ainda não possui vendas registradas.</p>
+              <div style={statCard}>
+                <div style={statTop}>
+                  <span>Total em reais</span>
+                  <span style={statIcon}>R$</span>
+                </div>
+                <strong style={{ ...statNumber, color: colors.green }}>
+                  {money(totalBrl)}
+                </strong>
+              </div>
+
+              <div style={statCard}>
+                <div style={statTop}>
+                  <span>Total em diamantes</span>
+                  <span style={statIcon}>◆</span>
+                </div>
+                <strong style={{ ...statNumber, color: colors.cyan }}>
+                  {totalDiamonds.toLocaleString("pt-BR")}
+                </strong>
+              </div>
+            </div>
+
+            <section style={panelStyle}>
+              <h2 style={panelTitle}>Histórico completo</h2>
+
+              {sales.length === 0 ? (
+                <div style={emptyCard}>
+                  <span style={emptyIcon}>▤</span>
+                  <h3>Nenhuma venda registrada</h3>
+                  <p style={subtitle}>
+                    Quando você registrar uma venda, ela aparecerá aqui.
+                  </p>
+                </div>
+              ) : (
+                sales.map((sale) => (
+                  <article key={sale.id} style={historyCard}>
+                    <div style={historyIcon}>✓</div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <strong style={{ display: "block" }}>
+                        {sale.product_title}
+                      </strong>
+                      <small style={mutedBlock}>
+                        Vendido em {date(sale.sold_at)}
+                      </small>
+                    </div>
+
+                    <div style={{ textAlign: "right" }}>
+                      {sale.sale_price_brl !== null && (
+                        <strong style={{ color: colors.green }}>
+                          {money(Number(sale.sale_price_brl))}
+                        </strong>
+                      )}
+
+                      {sale.sale_price_diamonds !== null && (
+                        <strong style={{ color: colors.cyan }}>
+                          {Number(sale.sale_price_diamonds).toLocaleString("pt-BR")} ◆
+                        </strong>
+                      )}
+                    </div>
+                  </article>
+                ))
               )}
-
-              {sales.map((sale) => (
-                <article key={sale.id} style={itemStyle}>
-                  <h3>{sale.product_title}</h3>
-
-                  {sale.sale_price_brl !== null && (
-                    <p>
-                      Vendido por: {money(Number(sale.sale_price_brl))}
-                    </p>
-                  )}
-
-                  {sale.sale_price_diamonds !== null && (
-                    <p>
-                      Vendido por:{" "}
-                      {Number(sale.sale_price_diamonds).toLocaleString("pt-BR")}
-                      {" diamantes"}
-                    </p>
-                  )}
-
-                  <small style={{ color: "#aab4c8" }}>
-                    Vendido em: {date(sale.sold_at)}
-                  </small>
-                </article>
-              ))}
             </section>
-          )}
-        </div>
+          </>
+        )}
+
+        <footer style={footerStyle}>
+          <span>CAM STORE</span>
+          <small>Central do vendedor</small>
+        </footer>
       </div>
 
       {saleProduct && (
         <div style={modalOverlayStyle}>
           <div style={modalStyle}>
-            <h2 style={{ marginTop: 0 }}>
+            <div style={modalTop}>
+              <div style={modalIcon}>✓</div>
+              <button
+                onClick={() => setSaleProduct(null)}
+                style={modalClose}
+                disabled={busy}
+              >
+                ×
+              </button>
+            </div>
+
+            <span style={eyebrow}>FINALIZAR VENDA</span>
+            <h2 style={{ margin: "8px 0" }}>
               Registrar venda
             </h2>
 
-            <p>
-              Anúncio: <strong>{saleProduct.title}</strong>
+            <p style={{ color: colors.muted }}>
+              Você está registrando a venda de:
             </p>
 
-            <p>Por qual modalidade este produto foi vendido?</p>
+            <div style={selectedProduct}>
+              <strong>{saleProduct.title}</strong>
+            </div>
+
+            <p style={{ fontWeight: 700 }}>
+              Como este produto foi vendido?
+            </p>
 
             {saleProduct.price_brl !== null && (
-              <label style={choiceStyle}>
+              <label
+                style={{
+                  ...choiceStyle,
+                  borderColor:
+                    saleType === "brl" ? colors.gold : colors.border,
+                }}
+              >
                 <input
                   type="radio"
                   name="saleType"
@@ -666,13 +979,20 @@ export default function PerfilVendedor() {
                   onChange={() => setSaleType("brl")}
                 />
                 <span>
-                  Reais — {money(Number(saleProduct.price_brl))}
+                  <strong>Reais</strong>
+                  <small>{money(Number(saleProduct.price_brl))}</small>
                 </span>
               </label>
             )}
 
             {saleProduct.price_diamonds !== null && (
-              <label style={choiceStyle}>
+              <label
+                style={{
+                  ...choiceStyle,
+                  borderColor:
+                    saleType === "diamonds" ? colors.cyan : colors.border,
+                }}
+              >
                 <input
                   type="radio"
                   name="saleType"
@@ -681,19 +1001,21 @@ export default function PerfilVendedor() {
                   onChange={() => setSaleType("diamonds")}
                 />
                 <span>
-                  Diamantes —{" "}
-                  {Number(saleProduct.price_diamonds).toLocaleString("pt-BR")}
+                  <strong>Diamantes</strong>
+                  <small>
+                    {Number(saleProduct.price_diamonds).toLocaleString("pt-BR")} ◆
+                  </small>
                 </span>
               </label>
             )}
 
-            <p style={{ color: "#aab4c8", fontSize: "13px" }}>
+            <p style={helperText}>
               Somente a modalidade escolhida será registrada no histórico.
             </p>
 
-            <div style={actionButtonsStyle}>
+            <div style={modalActions}>
               <button
-                style={buttonStyle}
+                style={{ ...buttonStyle, flex: 1 }}
                 disabled={busy}
                 onClick={confirmSale}
               >
@@ -701,7 +1023,7 @@ export default function PerfilVendedor() {
               </button>
 
               <button
-                style={secondaryButtonStyle}
+                style={{ ...secondaryButtonStyle, flex: 1 }}
                 disabled={busy}
                 onClick={() => setSaleProduct(null)}
               >
@@ -717,109 +1039,629 @@ export default function PerfilVendedor() {
 
 const pageStyle = {
   minHeight: "100vh",
-  background: "#080d18",
-  color: "#ffffff",
-  padding: "20px",
+  background: colors.background,
+  color: colors.text,
+  padding: "0 18px 30px",
+  fontFamily: "Arial, Helvetica, sans-serif",
 };
 
-const panelStyle = {
-  background: "#151e2e",
-  border: "1px solid #29364d",
-  borderRadius: "14px",
-  padding: "22px",
-  marginTop: "20px",
+const dashboard = {
+  maxWidth: "1150px",
+  margin: "auto",
 };
 
-const headerStyle = {
+const loadingStyle = {
+  minHeight: "85vh",
+  display: "flex",
+  flexDirection: "column" as const,
+  alignItems: "center",
+  justifyContent: "center",
+  textAlign: "center" as const,
+};
+
+const loadingLogo = {
+  color: colors.gold,
+  fontSize: "38px",
+  fontWeight: 900,
+  letterSpacing: "5px",
+};
+
+const loginWrapper = {
+  minHeight: "90vh",
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+};
+
+const loginCard = {
+  width: "100%",
+  maxWidth: "420px",
+  background: colors.panel,
+  border: `1px solid ${colors.border}`,
+  borderRadius: "20px",
+  padding: "30px",
+  boxSizing: "border-box" as const,
+};
+
+const brandMark = {
+  color: colors.gold,
+  fontWeight: 900,
+  letterSpacing: "3px",
+  fontSize: "19px",
+  marginBottom: "28px",
+};
+
+const loginIcon = {
+  width: "55px",
+  height: "55px",
+  borderRadius: "15px",
+  background: "rgba(226,187,103,0.12)",
+  color: colors.gold,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontSize: "28px",
+};
+
+const labelStyle = {
+  display: "block",
+  fontSize: "13px",
+  fontWeight: 700,
+  color: "#d5deeb",
+};
+
+const errorMessage = {
+  color: colors.red,
+  fontSize: "13px",
+};
+
+const backLink = {
+  display: "block",
+  marginTop: "24px",
+  color: colors.gold,
+  textDecoration: "none",
+  fontSize: "13px",
+};
+
+const topHeader = {
+  minHeight: "82px",
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  gap: "15px",
+  flexWrap: "wrap" as const,
+  borderBottom: `1px solid ${colors.border}`,
+};
+
+const brandLink = {
+  display: "flex",
+  alignItems: "center",
+  gap: "12px",
+  color: colors.text,
+  textDecoration: "none",
+};
+
+const crown = {
+  color: colors.gold,
+  fontSize: "31px",
+};
+
+const headerActions = {
+  display: "flex",
+  alignItems: "center",
+  gap: "9px",
+  flexWrap: "wrap" as const,
+};
+
+const storeButton = {
+  color: colors.cyan,
+  border: `1px solid ${colors.border}`,
+  borderRadius: "9px",
+  padding: "10px 13px",
+  textDecoration: "none",
+  fontSize: "13px",
+  fontWeight: 700,
+};
+
+const logoutButton = {
+  ...secondaryButtonStyle,
+  padding: "10px 13px",
+};
+
+const welcomeSection = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  flexWrap: "wrap" as const,
+  gap: "18px",
+  padding: "32px 0 25px",
+};
+
+const eyebrow = {
+  display: "block",
+  color: colors.cyan,
+  fontSize: "10px",
+  fontWeight: 900,
+  letterSpacing: "2px",
+  marginBottom: "8px",
+};
+
+const welcomeTitle = {
+  fontSize: "clamp(25px, 5vw, 34px)",
+  margin: "0 0 8px",
+};
+
+const approvedBadge = {
+  display: "flex",
+  alignItems: "center",
+  gap: "8px",
+  background: "rgba(39,201,138,0.1)",
+  color: colors.green,
+  border: "1px solid rgba(39,201,138,0.25)",
+  borderRadius: "30px",
+  padding: "10px 14px",
+  fontSize: "12px",
+  fontWeight: 700,
+};
+
+const onlineDot = {
+  width: "7px",
+  height: "7px",
+  borderRadius: "50%",
+  background: colors.green,
+};
+
+const navigation = {
+  display: "flex",
+  gap: "8px",
+  overflowX: "auto" as const,
+  paddingBottom: "12px",
+  borderBottom: `1px solid ${colors.border}`,
+};
+
+const navButton = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  gap: "8px",
+  padding: "12px 16px",
+  borderRadius: "10px",
+  border: "1px solid transparent",
+  background: "transparent",
+  color: colors.muted,
+  whiteSpace: "nowrap" as const,
+  cursor: "pointer",
+  fontSize: "13px",
+  fontWeight: 700,
+};
+
+const navButtonActive = {
+  background: "rgba(226,187,103,0.12)",
+  color: colors.gold,
+  border: `1px solid rgba(226,187,103,0.28)`,
+};
+
+const noticeStyle = {
   display: "flex",
   justifyContent: "space-between",
   alignItems: "center",
   gap: "12px",
+  background: "rgba(226,187,103,0.1)",
+  border: "1px solid rgba(226,187,103,0.25)",
+  color: colors.gold,
+  padding: "13px 16px",
+  borderRadius: "10px",
+  marginTop: "18px",
+  fontSize: "13px",
 };
 
-const navStyle = {
+const closeNotice = {
+  background: "transparent",
+  color: colors.gold,
+  border: "none",
+  fontSize: "22px",
+  cursor: "pointer",
+};
+
+const sectionHeading = {
   display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
   flexWrap: "wrap" as const,
-  gap: "10px",
-  marginTop: "20px",
-  marginBottom: "25px",
+  gap: "15px",
+  marginTop: "28px",
+  marginBottom: "18px",
+};
+
+const sectionTitle = {
+  fontSize: "25px",
+  margin: "0 0 7px",
+};
+
+const subtitle = {
+  color: colors.muted,
+  fontSize: "13px",
+  lineHeight: 1.6,
+  margin: 0,
+};
+
+const refreshButton = {
+  ...secondaryButtonStyle,
+  border: `1px solid ${colors.border}`,
 };
 
 const statsGrid = {
   display: "grid",
-  gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-  gap: "12px",
+  gridTemplateColumns: "repeat(auto-fit, minmax(210px, 1fr))",
+  gap: "13px",
   marginTop: "20px",
-  marginBottom: "25px",
 };
 
-const statStyle = {
-  background: "#202c40",
-  borderRadius: "10px",
-  padding: "17px",
+const statCard = {
+  background: `linear-gradient(145deg, ${colors.card}, #111b2d)`,
+  border: `1px solid ${colors.border}`,
+  borderRadius: "15px",
+  padding: "19px",
+  minWidth: 0,
   overflowWrap: "anywhere" as const,
 };
 
-const itemStyle = {
-  background: "#202c40",
-  borderRadius: "10px",
-  padding: "16px",
-  marginTop: "14px",
+const statTop = {
+  display: "flex",
+  justifyContent: "space-between",
+  alignItems: "center",
+  color: colors.muted,
+  fontSize: "12px",
+  gap: "8px",
 };
 
-const imageStyle = {
-  width: "105px",
-  height: "105px",
-  objectFit: "cover" as const,
-  borderRadius: "8px",
+const statIcon = {
+  color: colors.gold,
+  fontSize: "17px",
+  fontWeight: 900,
 };
 
-const imagePlaceholderStyle = {
-  ...imageStyle,
-  background: "#111827",
+const statNumber = {
+  display: "block",
+  fontSize: "clamp(22px, 4vw, 29px)",
+  marginTop: "18px",
+  marginBottom: "8px",
+  color: colors.text,
+};
+
+const statDescription = {
+  color: colors.muted,
+  fontSize: "11px",
+};
+
+const quickGrid = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))",
+  gap: "12px",
+  marginTop: "18px",
+};
+
+const quickCard = {
+  position: "relative" as const,
+  display: "flex",
+  flexDirection: "column" as const,
+  alignItems: "flex-start",
+  gap: "9px",
+  background: colors.card,
+  border: `1px solid ${colors.border}`,
+  borderRadius: "13px",
+  padding: "18px",
+  color: colors.text,
+  textAlign: "left" as const,
+  cursor: "pointer",
+};
+
+const quickIcon = {
+  fontSize: "24px",
+  color: colors.gold,
+  marginBottom: "5px",
+};
+
+const quickArrow = {
+  position: "absolute" as const,
+  right: "17px",
+  top: "18px",
+  color: colors.cyan,
+  fontSize: "20px",
+};
+
+const panelHeading = {
   display: "flex",
   alignItems: "center",
-  justifyContent: "center",
-  color: "#aab4c8",
+  justifyContent: "space-between",
+  gap: "12px",
+  flexWrap: "wrap" as const,
+};
+
+const panelTitle = {
+  fontSize: "19px",
+  margin: "0 0 7px",
+};
+
+const textButton = {
+  background: "transparent",
+  border: "none",
+  color: colors.gold,
+  cursor: "pointer",
+  fontWeight: 700,
   fontSize: "12px",
 };
 
-const productRowStyle = {
-  display: "flex",
-  flexWrap: "wrap" as const,
-  gap: "14px",
+const emptyText = {
+  color: colors.muted,
+  padding: "18px 0",
+  fontSize: "13px",
 };
 
-const productTitleLinkStyle = {
-  color: "#ffffff",
+const saleRow = {
+  display: "flex",
+  alignItems: "center",
+  gap: "12px",
+  borderBottom: `1px solid ${colors.border}`,
+  padding: "15px 0",
+  fontSize: "13px",
+};
+
+const saleSymbol = {
+  width: "34px",
+  height: "34px",
+  borderRadius: "10px",
+  background: "rgba(39,201,138,0.12)",
+  color: colors.green,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontWeight: 900,
+};
+
+const mutedBlock = {
+  display: "block",
+  color: colors.muted,
+  fontSize: "11px",
+  marginTop: "5px",
+};
+
+const profileForm = {
+  maxWidth: "550px",
+  marginTop: "22px",
+};
+
+const profileAvatar = {
+  width: "65px",
+  height: "65px",
+  borderRadius: "18px",
+  background: "rgba(226,187,103,0.13)",
+  border: `1px solid rgba(226,187,103,0.3)`,
+  color: colors.gold,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontSize: "27px",
+  fontWeight: 900,
+  marginBottom: "24px",
+};
+
+const helperText = {
+  color: colors.muted,
+  fontSize: "12px",
+  lineHeight: 1.6,
+  marginTop: "-8px",
+  marginBottom: "18px",
+};
+
+const miniStats = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))",
+  gap: "10px",
+  marginBottom: "18px",
+};
+
+const miniStat = {
+  display: "flex",
+  flexDirection: "column" as const,
+  gap: "5px",
+  padding: "14px",
+  borderRadius: "11px",
+  background: colors.card,
+  border: `1px solid ${colors.border}`,
+};
+
+const productsGrid = {
+  display: "grid",
+  gridTemplateColumns: "repeat(auto-fill, minmax(230px, 1fr))",
+  gap: "15px",
+};
+
+const productCard = {
+  background: colors.panel,
+  border: `1px solid ${colors.border}`,
+  borderRadius: "15px",
+  overflow: "hidden",
+  minWidth: 0,
+};
+
+const productImageLink = {
+  display: "block",
+  position: "relative" as const,
+  background: "#0b1424",
+  height: "190px",
   textDecoration: "none",
 };
 
-const actionButtonsStyle = {
+const productImage = {
+  width: "100%",
+  height: "100%",
+  objectFit: "cover" as const,
+};
+
+const productPlaceholder = {
+  width: "100%",
+  height: "100%",
+  display: "flex",
+  flexDirection: "column" as const,
+  alignItems: "center",
+  justifyContent: "center",
+  gap: "8px",
+  color: colors.muted,
+  fontSize: "30px",
+};
+
+const statusBadge = {
+  position: "absolute" as const,
+  top: "11px",
+  right: "11px",
+  padding: "7px 10px",
+  borderRadius: "20px",
+  fontSize: "10px",
+  fontWeight: 900,
+};
+
+const productContent = {
+  padding: "15px",
+};
+
+const categoryLabel = {
+  color: colors.cyan,
+  textTransform: "uppercase" as const,
+  letterSpacing: "1px",
+  fontSize: "10px",
+  fontWeight: 800,
+};
+
+const productName = {
+  fontSize: "16px",
+  margin: "8px 0 13px",
+  minHeight: "38px",
+  overflowWrap: "anywhere" as const,
+};
+
+const productPrices = {
   display: "flex",
   flexWrap: "wrap" as const,
-  gap: "9px",
+  alignItems: "center",
+  gap: "8px",
+  fontSize: "13px",
+  marginBottom: "12px",
+};
+
+const stockLabel = {
+  color: colors.muted,
+  fontSize: "11px",
+};
+
+const productActions = {
+  display: "flex",
+  gap: "8px",
   marginTop: "14px",
 };
 
-const linkButtonStyle = {
-  ...buttonStyle,
-  display: "inline-block",
-  textDecoration: "none",
+const viewProductButton = {
+  flex: 1,
   textAlign: "center" as const,
+  textDecoration: "none",
+  background: "#263750",
+  color: colors.text,
+  padding: "11px 7px",
+  borderRadius: "8px",
+  fontSize: "11px",
+  fontWeight: 700,
 };
 
-const secondaryLinkButtonStyle = {
-  ...secondaryButtonStyle,
-  display: "inline-block",
-  textDecoration: "none",
+const editProductButton = {
+  flex: 1,
   textAlign: "center" as const,
+  textDecoration: "none",
+  background: "rgba(226,187,103,0.13)",
+  border: "1px solid rgba(226,187,103,0.28)",
+  color: colors.gold,
+  padding: "11px 7px",
+  borderRadius: "8px",
+  fontSize: "11px",
+  fontWeight: 700,
+};
+
+const soldButton = {
+  width: "100%",
+  marginTop: "9px",
+  padding: "11px",
+  borderRadius: "8px",
+  border: "1px solid rgba(39,201,138,0.3)",
+  background: "rgba(39,201,138,0.1)",
+  color: colors.green,
+  cursor: "pointer",
+  fontWeight: 800,
+  fontSize: "11px",
+};
+
+const buttonLink = {
+  display: "inline-block",
+  background: colors.gold,
+  color: "#111827",
+  padding: "12px 16px",
+  borderRadius: "9px",
+  textDecoration: "none",
+  fontSize: "12px",
+  fontWeight: 900,
+};
+
+const emptyCard = {
+  textAlign: "center" as const,
+  padding: "45px 20px",
+  background: colors.panel,
+  border: `1px dashed ${colors.border}`,
+  borderRadius: "15px",
+};
+
+const emptyIcon = {
+  display: "block",
+  fontSize: "35px",
+  color: colors.gold,
+  marginBottom: "15px",
+};
+
+const historyCard = {
+  display: "flex",
+  alignItems: "center",
+  gap: "13px",
+  padding: "17px 0",
+  borderBottom: `1px solid ${colors.border}`,
+  fontSize: "13px",
+};
+
+const historyIcon = {
+  width: "37px",
+  height: "37px",
+  flexShrink: 0,
+  borderRadius: "11px",
+  background: "rgba(39,201,138,0.12)",
+  color: colors.green,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontWeight: 900,
+};
+
+const footerStyle = {
+  display: "flex",
+  justifyContent: "space-between",
+  gap: "12px",
+  borderTop: `1px solid ${colors.border}`,
+  paddingTop: "22px",
+  marginTop: "35px",
+  color: colors.gold,
+  fontWeight: 900,
+  fontSize: "12px",
 };
 
 const modalOverlayStyle = {
   position: "fixed" as const,
   inset: 0,
-  background: "rgba(0,0,0,0.78)",
+  background: "rgba(0,0,0,0.82)",
   display: "flex",
   justifyContent: "center",
   alignItems: "center",
@@ -830,21 +1672,65 @@ const modalOverlayStyle = {
 const modalStyle = {
   width: "100%",
   maxWidth: "440px",
-  background: "#151e2e",
-  border: "1px solid #39445b",
-  borderRadius: "14px",
-  padding: "22px",
-  color: "#ffffff",
+  boxSizing: "border-box" as const,
+  background: colors.panel,
+  border: `1px solid ${colors.border}`,
+  borderRadius: "18px",
+  padding: "23px",
+  color: colors.text,
+};
+
+const modalTop = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  marginBottom: "20px",
+};
+
+const modalIcon = {
+  width: "43px",
+  height: "43px",
+  borderRadius: "12px",
+  background: "rgba(39,201,138,0.12)",
+  color: colors.green,
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  fontSize: "22px",
+};
+
+const modalClose = {
+  background: "transparent",
+  border: "none",
+  color: colors.muted,
+  fontSize: "27px",
+  cursor: "pointer",
+};
+
+const selectedProduct = {
+  background: colors.card,
+  border: `1px solid ${colors.border}`,
+  borderRadius: "10px",
+  padding: "13px",
+  margin: "15px 0",
 };
 
 const choiceStyle = {
   display: "flex",
   alignItems: "center",
-  gap: "12px",
-  background: "#202c40",
+  gap: "13px",
+  background: colors.card,
+  border: `1px solid ${colors.border}`,
   padding: "14px",
-  borderRadius: "9px",
+  borderRadius: "10px",
   marginTop: "10px",
-  marginBottom: "10px",
   cursor: "pointer",
 };
+
+const modalActions = {
+  display: "flex",
+  flexWrap: "wrap" as const,
+  gap: "10px",
+  marginTop: "20px",
+};
+  
